@@ -1,22 +1,41 @@
-import { View, Text, StyleSheet, TextInput, Image, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TextInput, Image, ScrollView, TouchableOpacity } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import { useRoute } from '@react-navigation/native';
-import Modal from './modal';
+import { useSelector } from 'react-redux';
+
+import Ionicons from 'react-native-vector-icons/Ionicons';
+
+import Modal from './Modal';
+import Feed from './Feed';
+import Post from './Post';
+
 
 const API_URL = 'http://192.168.56.1:8800/api';
 
 
-const Profile = ({ navigation }) => {
+const Profile = ({ userId, navigation }) => {
 
-    const route = useRoute();
-    const { id } = route.params;
+
+    const PF = "https://unifeed.s3.ap-south-1.amazonaws.com/";
     const [data, setData] = useState(null)
     const [showModalabout, setShowModalabout] = useState(false);
+    const [showModalposting, setShowModalposting] = useState(false);
     const [about, setAbout] = useState("");
     const [user, setUser] = useState(null);
     const [update, setUpdate] = useState(false);
     const [skills, setSkills] = useState([]);
+    const [posts, setPosts] = useState([]);
+    const currentuser = useSelector((state) => state.user.user);
 
+
+
+    const handleopenmodalposting = () => {
+        setShowModalposting(true);
+    };
+
+    const handleCloseModalPosting = () => {
+        setShowModalposting(false);
+    };
 
 
     const handleOpenModalAbout = () => {
@@ -24,8 +43,12 @@ const Profile = ({ navigation }) => {
     };
 
 
-    const handleCloseModalabout = () => {
+    const handleCloseModalAbout = () => {
         setShowModalabout(false);
+    };
+
+    const sharepage = () => {
+        navigation.navigate('share');
     };
 
 
@@ -36,6 +59,7 @@ const Profile = ({ navigation }) => {
                 const response = await fetch(`${API_URL}/auth`);
                 const data = await response.json();
                 setUser(data);
+                // console.log(data)
             } catch (err) {
                 // Handle the error case when the API call fails
                 console.error('Failed to fetch user data:', err);
@@ -47,8 +71,12 @@ const Profile = ({ navigation }) => {
     useEffect(() => {
         const loaddata = async () => {
             try {
-                const response = await fetch(`${API_URL}/users/${id}`);
+                console.log("login done")
+                const response = await fetch(`${API_URL}/users/${currentuser?._id}`);
+                // console.log("API Response:", response);
+
                 const data = await response.json();
+                // console.log(data)
 
                 if (!data) {
                     navigation.navigate('login');
@@ -67,11 +95,61 @@ const Profile = ({ navigation }) => {
     }, []);
 
 
+
+
+
+    useEffect(() => {
+        const fetchPosts = async () => {
+            let res;
+            try {
+                console.log("first")
+
+                console.log("started")
+                res = await fetch(`${API_URL}/posts/profile/${currentuser?._id}`);
+                // console.log("response 1 :", res)
+
+
+                // console.log(res)
+
+                if (res) {
+                    console.log("inside if res")
+                    const responseData = await res.json();
+                    console.log(responseData)
+
+                    // Sort the data by createdAt property in descending order
+                    const sortedPosts = responseData.sort(
+                        (p1, p2) => new Date(p2.createdAt) - new Date(p1.createdAt)
+                    );
+
+                    // Set the sorted posts to the state
+                    setPosts(sortedPosts);
+                }
+
+            } catch (error) {
+                console.log("under catch")
+                console.error('Error fetching posts:', error);
+            }
+
+
+        };
+
+        fetchPosts();
+    }, [user]);
+
+
+
+
+
+
+
+
+
+
     //about
 
     const updateAbout = async () => {
         try {
-            const response = await fetch(`${API_URL}/auth/register/${id}`, {
+            const response = await fetch(`${API_URL}/auth/register/${currentuser?._id}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -95,7 +173,7 @@ const Profile = ({ navigation }) => {
 
 
     return (
-        <View style={styles.container}>
+        <ScrollView style={styles.container}>
             <View style={styles.profileContainer}>
                 <Image
                     source={data?.profilePic ? { uri: PF + data.profilePic } : require('./background.png')}
@@ -104,6 +182,7 @@ const Profile = ({ navigation }) => {
                 <View style={styles.profileInfo}>
                     <Text style={styles.username}>@{data?.userName}</Text>
                     <Text style={styles.fullName}>{data?.fullName}</Text>
+                    {/* {console.log("Post : ", posts)} */}
                 </View>
                 <View style={styles.profileAbout}>
                     <Text style={styles.aboutTitle}>About</Text>
@@ -114,7 +193,7 @@ const Profile = ({ navigation }) => {
                         </TouchableOpacity>
                     )}
                 </View>
-                <Modal visible={showModalabout} animationType="slide">
+                {/* <Modal visible={showModalabout} animationType="slide">
                     <View style={styles.modalContainer}>
                         <Text style={styles.modalHeading}>Update About</Text>
                         <TextInput
@@ -130,7 +209,7 @@ const Profile = ({ navigation }) => {
                             <Text style={styles.closeButtonText}>Close</Text>
                         </TouchableOpacity>
                     </View>
-                </Modal>
+                </Modal> */}
 
             </View>
             <View style={styles.buttonsContainer}>
@@ -143,29 +222,18 @@ const Profile = ({ navigation }) => {
                 <TouchableOpacity style={styles.button}>
                     <Text style={styles.buttonText}>Schedule Meeting</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.button}>
-                    <Text style={styles.buttonText}>M</Text>
+                <TouchableOpacity style={styles.buttonmsg}>
+                    <Ionicons name="chatbox-outline" size={30} color="red" />
                 </TouchableOpacity>
             </View>
             <View style={styles.skillsContainer}>
                 <Text style={styles.skillsHeading}>Skills</Text>
                 <View style={styles.skillsRow}>
-                    <View style={styles.skillBox}>
-                        <Text style={styles.skillText}>Web Development</Text>
-                    </View>
-                    <View style={styles.skillBox}>
-                        <Text style={styles.skillText}>Marketing</Text>
-                    </View>
-                    <View style={styles.skillBox}>
-                        <Text style={styles.skillText}>Data Analysis</Text>
-                    </View>
-                    <View style={styles.skillBox}>
-                        <Text style={styles.skillText}>ASP.NET</Text>
-                    </View>
-                    <View style={styles.skillBox}>
-                        <Text style={styles.skillText}>Python</Text>
-                    </View>
-                    {/* Add more skills boxes as needed */}
+                    {skills.map((skill, index) => (
+                        <View style={styles.skillBox} key={index}>
+                            <Text style={styles.skillText}>{skill}</Text>
+                        </View>
+                    ))}
                 </View>
             </View>
             <View style={styles.badgesContainer}>
@@ -243,7 +311,23 @@ const Profile = ({ navigation }) => {
                     </View>
                 </View>
             </View>
-        </View >
+
+            {/* Bottom Navigation Bar */}
+            <View style={styles.postSection}>
+                <Text style={styles.skillsHeading}>Posts</Text>
+                <View style={styles.postsRow}>
+                    {posts?.map((p, index) => (
+                        <View style={styles.post} key={index}>
+                            <Image
+                                source={p?.postpic ? { uri: PF + p.postpic } : require('./background.png')}
+                                style={styles.postImage}
+                            />
+                        </View>
+                    ))}
+                </View>
+            </View>
+
+        </ScrollView >
     );
 };
 
@@ -380,6 +464,84 @@ const styles = StyleSheet.create({
     boxContent: {
         textAlign: 'center',
         padding: 10,
+    },
+    postSection: {
+        marginTop: 20,
+    },
+    postHeading: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginBottom: 10,
+    },
+    postsRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+    },
+    post: {
+        width: '30%', // Adjust as needed for your layout
+        marginBottom: 20,
+    },
+    postImage: {
+        width: '100%',
+        height: 120, // Adjust as needed for your layout
+        resizeMode: 'cover',
+        borderRadius: 10,
+    },
+    postCaption: {
+        marginTop: 5,
+    },
+
+    bottomNavBar: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        alignItems: 'center',
+        paddingVertical: 10,
+        borderTopWidth: 1,
+        borderTopColor: '#ccc',
+    },
+    iconContainer: {
+        alignItems: 'center',
+    },
+    icon: {
+        width: 30,
+        height: 30,
+    },
+    modalContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+    },
+    modalHeading: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        marginBottom: 20,
+    },
+    modalInput: {
+        width: '100%',
+        height: 40,
+        borderWidth: 1,
+        borderColor: 'gray',
+        marginBottom: 20,
+        paddingHorizontal: 10,
+    },
+    imagePreview: {
+        width: 200,
+        height: 200,
+        marginBottom: 20,
+    },
+    uploadButton: {
+        backgroundColor: '#e6243b',
+        padding: 10,
+        borderRadius: 5,
+        width: '100%',
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    uploadButtonText: {
+        color: 'white',
+        fontWeight: 'bold',
     },
 });
 

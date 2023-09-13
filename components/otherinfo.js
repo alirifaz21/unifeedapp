@@ -5,6 +5,10 @@ import * as ImagePicker from 'expo-image-picker';
 import { useRoute } from '@react-navigation/native';
 
 
+import 'react-native-gesture-handler';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+
+
 function OtherInfo({ navigation }) {
   const route = useRoute();
   const { id } = route.params;
@@ -37,10 +41,9 @@ function OtherInfo({ navigation }) {
     setAllSkills(updatedSkills);
   };
 
-  const handleImageChange = (assets) => {
-    setSelectedImage(assets[0]);
-    setImagePreview(assets[0].uri);
-  };
+
+
+
 
   const handleImageGallery = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -51,8 +54,9 @@ function OtherInfo({ navigation }) {
     });
 
     if (!result.canceled) {
-      console.log(result)
-      handleImageChange(result.assets);
+      console.log(result.assets[0])
+      setImagePreview(result.assets[0].uri);
+      setSelectedImage(result.assets[0]);
     }
   };
 
@@ -66,11 +70,14 @@ function OtherInfo({ navigation }) {
   };
 
   const handleImageUpload = async () => {
-    navigation.navigate('home');
     const formData = new FormData();
-    const profilePic = Date.now() + selectedImage.name;
+    const profilePic = Date.now();
     formData.append('name', profilePic);
-    formData.append('image', selectedImage);
+    formData.append('image', {
+      uri: selectedImage.uri,
+      type: 'image/jpeg', // Replace with the correct mime type of the image
+      name: 'image.jpg', // Replace with the desired name for the image
+    });
 
     const user = {
       profilePic: profilePic,
@@ -80,12 +87,17 @@ function OtherInfo({ navigation }) {
       console.log("first")
       const imageResponse = await fetch('http://192.168.56.1:8800/api/images/', {
         method: 'POST',
-        body: formData,
         headers: {
           'Content-Type': 'multipart/form-data',
         },
+        body: formData,
+
       });
-      console.log("second");
+
+
+
+
+
 
       if (imageResponse.ok) {
         const userResponse = await fetch(`http://192.168.56.1:8800/api/auth/register/${id}`, {
@@ -141,10 +153,12 @@ function OtherInfo({ navigation }) {
   const renderContent = () => {
     if (count === 1) {
       return (
-        <View style={styles.container}>
-          <Text style={styles.verifytext}>Verify Email</Text>
-          <Button title="Next" onPress={verify} />
-        </View>
+        <GestureHandlerRootView>
+          <View style={styles.container}>
+            <Text style={styles.verifytext}>Verify Email</Text>
+            <Button title="Next" onPress={verify} />
+          </View>
+        </GestureHandlerRootView>
       );
     } else if (count === 2) {
       return (
@@ -203,8 +217,9 @@ function OtherInfo({ navigation }) {
           <Text>Profile Picture</Text>
           {imagePreview && (
             <Image
+
               source={{ uri: imagePreview }}
-              style={styles.imagePreview}
+              style={{ height: 200, width: 200 }}
             />
           )}
           <View style={styles.buttonsnb}>

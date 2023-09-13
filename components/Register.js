@@ -37,12 +37,15 @@ const RegistrationScreen = ({ navigation }) => {
             try {
                 console.log("start");
                 console.log(user)
+
                 const response = await fetch('http://192.168.56.1:8800/api/auth/register', {
                     method: 'POST',
                     headers: {
+
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify(user),
+                    credentials: 'include',
                 });
 
                 console.log("first");
@@ -50,6 +53,8 @@ const RegistrationScreen = ({ navigation }) => {
                 if (response.ok) {
                     const responseData = await response.json();
                     console.log('Response data:', responseData);
+                    await AsyncStorage.setItem('token', responseData.token);
+
                     navigation.navigate('otherinfo', { id: responseData._id })
                 } else {
                     console.log('Response status:', response.status);

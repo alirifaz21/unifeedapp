@@ -1,11 +1,17 @@
 import React, { useState } from 'react';
 import { ScrollView, View, Text, StyleSheet } from 'react-native';
 import { TextInput, Button, Snackbar } from 'react-native-paper';
+import { useDispatch } from 'react-redux';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+import { getUser } from '../redux/userreducer';
 import { useNavigation } from '@react-navigation/native';
 
 import api from '../api';
 
 const LoginScreen = ({ navigation }) => {
+    const dispatch = useDispatch();
+
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [snackbarVisible, setSnackbarVisible] = useState(false);
@@ -26,14 +32,18 @@ const LoginScreen = ({ navigation }) => {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(user),
+                credentials: 'include',
             });
             console.log("last")
             if (response.ok) {
+                // console.log("response :", response)
                 const responseData = await response.json();
-                console.log('Response data:', responseData);
-                navigation.navigate('Profile', { id: responseData._id })
+                // console.log('Response data:', responseData);
+                await AsyncStorage.setItem('token', responseData.token);
+                navigation.navigate('MainBottomTab');
+                dispatch(getUser());
             } else {
-                console.log('Response status:', response.status);
+                // console.log('Response status:', response.status);
                 setSnackbarText('An error occurred during registration.');
                 setSnackbarVisible(true);
             }

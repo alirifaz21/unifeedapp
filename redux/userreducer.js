@@ -1,16 +1,29 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import api from '../api'; // Update the path to your api module
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 
 const initialState = {
     isLoading: false,
-    user: null,
+    user: "hi",
     isError: false,
 };
 
+
 export const getUser = createAsyncThunk('getUser', async () => {
+    console.log("usereducer callled")
+    const token = await AsyncStorage.getItem('token');
+
+    const config = {
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            // Add more headers as needed
+        }
+    };
     try {
-        const response = await api.get('/users'); // Update the API endpoint
-        return response.data; // Assuming the response data contains the user details
+        const response = await axios.get('http://192.168.56.1:8800/api/users', config);
+        return response.data;
     } catch (error) {
         throw new Error(error.message);
     }
